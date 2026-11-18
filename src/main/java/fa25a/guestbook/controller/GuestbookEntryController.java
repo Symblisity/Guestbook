@@ -43,7 +43,7 @@ public class GuestbookEntryController {
 
     @GetMapping
     public ResponseEntity<List<GuestbookEntryResponse>> getAllGuestbookEntries() {
-        List<GuestbookEntry> guestbookEntryList = service.readAll();
+        List<GuestbookEntry> guestbookEntryList = service.readAllOrderByIdDesc();
         List<GuestbookEntryResponse> responseList = new ArrayList<>();
         for(GuestbookEntry guestbookEntry : guestbookEntryList) {
             responseList.add(mapper.mapModelToResponse(guestbookEntry));

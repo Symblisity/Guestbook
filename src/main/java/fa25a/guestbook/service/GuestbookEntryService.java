@@ -42,4 +42,8 @@ public class GuestbookEntryService {
         return serializedGuestbookEntry;
     }
 
+    public List<GuestbookEntry> readAllOrderByIdDesc() {
+        return guestbookEntryRepository.findAllByOrderByIdDesc();
+    }
+
 }
