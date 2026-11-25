@@ -1,0 +1,218 @@
+openapi: 3.0.3
+
+info:
+  title: "Gästebuch Web Service"
+  version: "1.0.0"
+  description: >-
+    REST-API des Gästebuchs. Gästebucheinträge können angelegt, einzeln oder
+    als Liste gelesen, geändert und gelöscht werden.
+
+servers:
+  - url: "http://localhost:8080/guestbook"
+    description: "Lokaler Entwicklungsserver"
+
+tags:
+  - name: "Einträge lesen"
+    description: "Endpunkte zum Auslesen von Gästebucheinträgen"
+  - name: "Einträge schreiben"
+    description: "Endpunkte zum Anlegen, Ändern und Löschen von Gästebucheinträgen"
+
+paths:
+  /entries:
+    get:
+      tags: ["Einträge lesen"]
+      summary: "Alle Einträge auslesen"
+      description: "Liefert alle Einträge, absteigend nach ID sortiert (neuester Eintrag zuerst)."
+      operationId: "getAllGuestbookEntries"
+      responses:
+        "200":
+          $ref: "#/components/responses/EntryList"
+
+    post:
+      tags: ["Einträge schreiben"]
+      summary: "Neuen Eintrag anlegen"
+      description: "Legt einen Eintrag an. Die ID wird vom Service vergeben, eine mitgesendete ID wird ignoriert."
+      operationId: "addGuestbookEntry"
+      requestBody:
+        $ref: "#/components/requestBodies/NewEntry"
+      responses:
+        "201":
+          $ref: "#/components/responses/EntryCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+    put:
+      tags: ["Einträge schreiben"]
+      summary: "Bestehenden Eintrag ändern"
+      description: >-
+        Ändert Titel, Kommentar und Kommentator des Eintrags, dessen ID im
+        Request-Body steht. Existiert kein Eintrag mit dieser ID, antwortet
+        der Service derzeit mit 500.
+      operationId: "updateGuestbookEntry"
+      requestBody:
+        $ref: "#/components/requestBodies/ChangedEntry"
+      responses:
+        "200":
+          $ref: "#/components/responses/Entry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /entries/{id}:
+    get:
+      tags: ["Einträge lesen"]
+      summary: "Einen Eintrag auslesen"
+      description: "Liefert den Eintrag mit der angegebenen ID. Existiert er nicht, antwortet der Service derzeit mit 500."
+      operationId: "getGuestbookEntry"
+      parameters:
+        - $ref: "#/components/parameters/EntryId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Entry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    delete:
+      tags: ["Einträge schreiben"]
+      summary: "Einen Eintrag löschen"
+      description: "Löscht den Eintrag mit der angegebenen ID. Eine nicht vorhandene ID führt ebenfalls zu 204."
+      operationId: "deleteGuestbookEntry"
+      parameters:
+        - $ref: "#/components/parameters/EntryId"
+      responses:
+        "204":
+          description: "Eintrag gelöscht (kein Inhalt)"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+components:
+  schemas:
+    NewEntry:
+      type: object
+      description: "Daten eines neuen Eintrags (ohne ID)"
+      properties:
+        title:
+          type: string
+          example: "Wunderbarer Abend"
+        comment:
+          type: string
+          example: "Das Essen war hervorragend."
+        commenter:
+          type: string
+          example: "Lena Hoffmann"
+
+    ChangedEntry:
+      type: object
+      description: "Neue Daten eines bestehenden Eintrags, identifiziert über die ID"
+      required: ["id"]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 2
+        title:
+          type: string
+          example: "Gern wieder (Nachtrag)"
+        comment:
+          type: string
+          example: "Wir kommen im Frühjahr zurück."
+        commenter:
+          type: string
+          example: "Tim Wagner"
+
+    Entry:
+      type: object
+      description: "Ein Gästebucheintrag, wie ihn der Service zurückgibt"
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        title:
+          type: string
+          example: "Wunderbarer Abend"
+        comment:
+          type: string
+          example: "Das Essen war hervorragend."
+        commenter:
+          type: string
+          example: "Lena Hoffmann"
+
+    ErrorMessage:
+      type: object
+      description: "Standard-Fehlerantwort von Spring Boot"
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          example: 500
+        error:
+          type: string
+          example: "Internal Server Error"
+        path:
+          type: string
+          example: "/guestbook/entries/42"
+
+  parameters:
+    EntryId:
+      name: id
+      in: path
+      required: true
+      description: "ID des Gästebucheintrags"
+      schema:
+        type: integer
+        format: int64
+        example: 1
+
+  requestBodies:
+    NewEntry:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NewEntry"
+    ChangedEntry:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ChangedEntry"
+
+  responses:
+    Entry:
+      description: "OK"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Entry"
+    EntryCreated:
+      description: "Eintrag angelegt"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Entry"
+    EntryList:
+      description: "OK (leere Liste, wenn kein Eintrag existiert)"
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/Entry"
+    BadRequest:
+      description: "Ungültige Anfrage, z. B. ID ist keine Zahl oder der Body ist kein gültiges JSON"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
+    ServerError:
+      description: "Interner Fehler, z. B. weil der Eintrag mit dieser ID nicht existiert"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"

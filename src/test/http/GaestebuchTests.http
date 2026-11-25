@@ -1,0 +1,243 @@
+### TC-01: Leeres Gaestebuch auslesen
+GET http://localhost:8080/guestbook/entries
+Accept: application/json
+
+> {%
+    client.test("TC-01 GET All: Gaestebuch ist leer", function() {
+        client.assert(response.status === 200, "Status sollte 200 sein.");
+        client.assert(response.body.length === 0, "Liste sollte leer sein.");
+    });
+%}
+
+### TC-02: Ersten Eintrag anlegen
+POST http://localhost:8080/guestbook/entries
+Content-Type: application/json
+
+{
+  "title": "Wunderbarer Abend",
+  "comment": "Das Essen war hervorragend.",
+  "commenter": "Lena Hoffmann"
+}
+
+> {%
+    client.test("TC-02 POST: erster Eintrag angelegt", function() {
+        client.assert(response.status === 201, "Status sollte 201 sein.");
+        client.assert(response.body.id === 1, "ID stimmt nicht.");
+        client.assert(response.body.title === "Wunderbarer Abend", "Titel stimmt nicht.");
+        client.assert(response.body.comment === "Das Essen war hervorragend.", "Kommentar stimmt nicht.");
+        client.assert(response.body.commenter === "Lena Hoffmann", "Kommentator stimmt nicht.");
+    });
+%}
+
+### TC-03: Zweiten Eintrag anlegen
+POST http://localhost:8080/guestbook/entries
+Content-Type: application/json
+
+{
+  "title": "Gern wieder",
+  "comment": "Sehr freundliches Personal.",
+  "commenter": "Tim Wagner"
+}
+
+> {%
+    client.test("TC-03 POST: zweiter Eintrag angelegt", function() {
+        client.assert(response.status === 201, "Status sollte 201 sein.");
+        client.assert(response.body.id === 2, "ID stimmt nicht.");
+        client.assert(response.body.title === "Gern wieder", "Titel stimmt nicht.");
+        client.assert(response.body.comment === "Sehr freundliches Personal.", "Kommentar stimmt nicht.");
+        client.assert(response.body.commenter === "Tim Wagner", "Kommentator stimmt nicht.");
+    });
+%}
+
+### TC-04: Einzelnen Eintrag auslesen
+GET http://localhost:8080/guestbook/entries/1
+Accept: application/json
+
+> {%
+    client.test("TC-04 GET by ID: Eintrag 1", function() {
+        client.assert(response.status === 200, "Status sollte 200 sein.");
+        client.assert(response.body.id === 1, "ID stimmt nicht.");
+        client.assert(response.body.title === "Wunderbarer Abend", "Titel stimmt nicht.");
+        client.assert(response.body.comment === "Das Essen war hervorragend.", "Kommentar stimmt nicht.");
+        client.assert(response.body.commenter === "Lena Hoffmann", "Kommentator stimmt nicht.");
+    });
+%}
+
+### TC-05: Alle Eintraege auslesen (absteigend nach ID)
+GET http://localhost:8080/guestbook/entries
+Accept: application/json
+
+> {%
+    client.test("TC-05 GET All: Reihenfolge und Inhalt", function() {
+        client.assert(response.status === 200, "Status sollte 200 sein.");
+        client.assert(response.body.length === 2, "Liste sollte genau 2 Elemente enthalten.");
+        client.assert(response.body[0].id === 2, "Erstes Element sollte ID 2 haben.");
+        client.assert(response.body[0].title === "Gern wieder", "Titel stimmt nicht.");
+        client.assert(response.body[0].comment === "Sehr freundliches Personal.", "Kommentar stimmt nicht.");
+        client.assert(response.body[0].commenter === "Tim Wagner", "Kommentator stimmt nicht.");
+        client.assert(response.body[1].id === 1, "Zweites Element sollte ID 1 haben.");
+        client.assert(response.body[1].title === "Wunderbarer Abend", "Titel stimmt nicht.");
+        client.assert(response.body[1].comment === "Das Essen war hervorragend.", "Kommentar stimmt nicht.");
+        client.assert(response.body[1].commenter === "Lena Hoffmann", "Kommentator stimmt nicht.");
+    });
+%}
+
+### TC-06: Eintrag aendern (ID steht im Body)
+PUT http://localhost:8080/guestbook/entries
+Content-Type: application/json
+
+{
+  "id": 2,
+  "title": "Gern wieder (Nachtrag)",
+  "comment": "Wir kommen im Frühjahr zurück.",
+  "commenter": "Tim Wagner"
+}
+
+> {%
+    client.test("TC-06 PUT: Eintrag 2 geaendert", function() {
+        client.assert(response.status === 200, "Status sollte 200 sein.");
+        client.assert(response.body.id === 2, "ID stimmt nicht.");
+        client.assert(response.body.title === "Gern wieder (Nachtrag)", "Titel stimmt nicht.");
+        client.assert(response.body.comment === "Wir kommen im Frühjahr zurück.", "Kommentar stimmt nicht.");
+        client.assert(response.body.commenter === "Tim Wagner", "Kommentator stimmt nicht.");
+    });
+%}
+
+### TC-07: Geaenderten Eintrag auslesen
+GET http://localhost:8080/guestbook/entries/2
+Accept: application/json
+
+> {%
+    client.test("TC-07 GET by ID: Aenderung gespeichert", function() {
+        client.assert(response.status === 200, "Status sollte 200 sein.");
+        client.assert(response.body.id === 2, "ID stimmt nicht.");
+        client.assert(response.body.title === "Gern wieder (Nachtrag)", "Titel stimmt nicht.");
+        client.assert(response.body.comment === "Wir kommen im Frühjahr zurück.", "Kommentar stimmt nicht.");
+        client.assert(response.body.commenter === "Tim Wagner", "Kommentator stimmt nicht.");
+    });
+%}
+
+### TC-08: Nicht existierenden Eintrag aendern
+PUT http://localhost:8080/guestbook/entries
+Content-Type: application/json
+
+{
+  "id": 42,
+  "title": "Phantom",
+  "comment": "Gibt es nicht.",
+  "commenter": "Niemand"
+}
+
+> {%
+    client.test("TC-08 PUT: unbekannte ID", function() {
+        client.assert(response.status === 500, "Status sollte 500 sein (aktuelles Verhalten).");
+    });
+%}
+
+### TC-09: Nicht existierenden Eintrag auslesen
+GET http://localhost:8080/guestbook/entries/42
+Accept: application/json
+
+> {%
+    client.test("TC-09 GET by ID: unbekannte ID", function() {
+        client.assert(response.status === 500, "Status sollte 500 sein (aktuelles Verhalten).");
+    });
+%}
+
+### TC-10: Ungueltige ID (keine Zahl)
+GET http://localhost:8080/guestbook/entries/abc
+Accept: application/json
+
+> {%
+    client.test("TC-10 GET by ID: ID ist keine Zahl", function() {
+        client.assert(response.status === 400, "Status sollte 400 sein.");
+    });
+%}
+
+### TC-11: Nicht lesbarer Request-Body
+POST http://localhost:8080/guestbook/entries
+Content-Type: application/json
+
+das ist kein JSON
+
+> {%
+    client.test("TC-11 POST: ungueltiges JSON", function() {
+        client.assert(response.status === 400, "Status sollte 400 sein.");
+    });
+%}
+
+### TC-12: Anlegen mit mitgesendeter ID (wird ignoriert)
+POST http://localhost:8080/guestbook/entries
+Content-Type: application/json
+
+{
+  "id": 77,
+  "title": "Mit ID",
+  "comment": "Die ID sollte ignoriert werden.",
+  "commenter": "Eva Klein"
+}
+
+> {%
+    client.test("TC-12 POST: mitgesendete ID wird ignoriert", function() {
+        client.assert(response.status === 201, "Status sollte 201 sein.");
+        client.assert(response.body.id === 3, "ID sollte 3 sein, nicht 77.");
+        client.assert(response.body.title === "Mit ID", "Titel stimmt nicht.");
+        client.assert(response.body.comment === "Die ID sollte ignoriert werden.", "Kommentar stimmt nicht.");
+        client.assert(response.body.commenter === "Eva Klein", "Kommentator stimmt nicht.");
+    });
+%}
+
+### TC-13: Eintrag loeschen
+DELETE http://localhost:8080/guestbook/entries/1
+Accept: application/json
+
+> {%
+    client.test("TC-13 DELETE: Eintrag 1 geloescht", function() {
+        client.assert(response.status === 204, "Status sollte 204 sein.");
+    });
+%}
+
+### TC-14: Geloeschten Eintrag auslesen
+GET http://localhost:8080/guestbook/entries/1
+Accept: application/json
+
+> {%
+    client.test("TC-14 GET by ID: geloeschter Eintrag", function() {
+        client.assert(response.status === 500, "Status sollte 500 sein (aktuelles Verhalten).");
+    });
+%}
+
+### TC-15: Alle Eintraege nach dem Loeschen auslesen
+GET http://localhost:8080/guestbook/entries
+Accept: application/json
+
+> {%
+    client.test("TC-15 GET All: Liste nach dem Loeschen", function() {
+        client.assert(response.status === 200, "Status sollte 200 sein.");
+        client.assert(response.body.length === 2, "Liste sollte genau 2 Elemente enthalten.");
+        client.assert(response.body[0].id === 3, "Erstes Element sollte ID 3 haben.");
+        client.assert(response.body[0].title === "Mit ID", "Titel stimmt nicht.");
+        client.assert(response.body[1].id === 2, "Zweites Element sollte ID 2 haben.");
+        client.assert(response.body[1].title === "Gern wieder (Nachtrag)", "Titel stimmt nicht.");
+    });
+%}
+
+### TC-16: Bereits geloeschten Eintrag erneut loeschen
+DELETE http://localhost:8080/guestbook/entries/1
+Accept: application/json
+
+> {%
+    client.test("TC-16 DELETE: erneutes Loeschen", function() {
+        client.assert(response.status === 204, "Status sollte 204 sein.");
+    });
+%}
+
+### TC-17: DELETE auf die Basis-URL (nicht unterstuetzt)
+DELETE http://localhost:8080/guestbook/entries
+Accept: application/json
+
+> {%
+    client.test("TC-17 DELETE ohne ID: Methode nicht erlaubt", function() {
+        client.assert(response.status === 405, "Status sollte 405 sein.");
+    });
+%}
